@@ -1,139 +1,125 @@
-# Forest-App-Release
-# Forest App — v1.4.0
+# Forest App
 
-A field-work diary app for Forest Van Mitras, Forest Guards, and other field staff, built with Expo (managed workflow) + React Native. Tracks daily From/To/Remarks entries per month, attaches GPS-stamped photos, and exports a completed month as a Word document. Requires an account and a paid subscription; a companion backend handles login, email verification, and subscription payments.
+A field-work diary app for forest staff: Van Mitras, Forest Guards, Forest Workers and other field personnel. Keep your daily tour diary, take GPS-stamped photos, calculate timber volumes, and export finished records as Word documents, all from your phone.
 
-## Features
+> **Platform:** Android (APK download). Not on the Play Store yet.
 
-**Account & subscription**
-- Sign up with name, email, and password; a verification email is sent (via the backend) with a link to confirm the address before the app can be used
-- Login / logout, forgot-password and reset-password flows
-- Change password from within the app
-- One-time profile setup after signup: designation, profile picture
-- Paid subscription (Monthly / Yearly) via Razorpay in-app checkout; access is controlled by a signed entitlement token verified on-device, so the app keeps working offline once entitled
+---
 
-**Diary**
-- Current-month diary, auto-created on first open
-- Create a diary for any historical month/year (leap-year aware)
-- Daily entries: From / To / Remarks, 3 entries per page with Previous/Next
-- Edit any existing entry (updates in place — never duplicates a row)
-- Future dates locked in the *current* month only; historical months are fully editable
-- Missed days stay empty until filled — never auto-filled or deleted
-- Progress tracking and a "My Diaries" list with completion %
-- Word (.docx) export via the native share sheet, blocked until the diary is 100% complete
+## Download
 
-**Profile**
-- Setup form (name, designation, title, DOB, usual tour-start location) required before any diary can be created
-- "My Profile" tab opens as a read-only summary card with an **Edit Profile** button that reveals the same form (Save Changes / Cancel)
-- The usual tour-start location pre-fills each new entry's "From" field — always read live from the current profile, never baked in at diary-creation time
-
-**Camera & GPS-stamped photos**
-- Live camera preview with a real-time GPS/time overlay, flip camera, and flash toggle
-- Preview framing matches the device's actual best available picture size (closest to 16:9) so what's on screen is what gets captured
-- On capture, GPS/time (and an optional note) are burned onto the photo in a single compositing pass
-- **Retake** button on the confirm screen, alongside Confirm, to discard the shot and go straight back to the camera
-- A small thumbnail of the most recent gallery photo sits on the camera screen; tapping it opens the device's default Gallery/Photos viewer directly via a native `ACTION_VIEW` intent on Android, or a full-preview share sheet on iOS
-- Captured photos save straight to the device's public Gallery (via `expo-media-library`) — there is no private in-app copy — and can optionally attach to today's diary entry
-- If today's entry is already completed, the user is asked to **Replace** its From/To/Remarks with the new photo's, or just **Save to Gallery** instead
-- On a diary entry, "See Photo" shows the full, uncropped photo (so the GPS/time stamp in the corner is never cropped off) in a small preview box; tapping it opens a full-screen pinch-to-zoom/pan viewer
-- If a photo attached to an entry has since been deleted from the device's Gallery, the entry shows "Photo not available" rather than a broken image
-
-**Storage**
-- Diary and profile data stored locally in SQLite (`expo-sqlite`) on the device
-- Account, subscription and entitlement data live on the backend; the diary content itself is never uploaded
+1. Go to the [**Releases**](../../releases/latest) page of this repository.
+2. Under **Assets**, download the latest `.apk` file.
 
 ## How to install
 
-This app is not yet published on the Play Store. Download the latest APK from the **Releases** section of this repository and install it on an Android phone.
+1. Open the downloaded APK on your phone.
+2. If Android asks, allow **"Install from unknown sources"** for your browser or file manager. This is normal for apps outside the Play Store.
+3. Tap **Install**, then **Open**.
 
-- Android will likely warn about installing from an unknown source — allow it for this file.
-- If the app is already installed, installing the new APK **updates it in place** and keeps existing data, as long as it's the same signing key and the version code has increased.
+**Updating:** download the newer APK from Releases and install it over the old one. Your diaries and records stay on your phone.
 
-### Using the app
-- On first launch, sign up with an email and password.
-- Check that inbox for a verification email and tap the link (opens a page with a button back into the app).
-- Complete the one-time profile setup.
-- Subscribe (Monthly ₹59 or Yearly ₹599) via the in-app Razorpay checkout to unlock full access.
+---
 
-## Backend
+## Getting started
 
-The app talks to a separate Node/Express backend (`TourDiary-backend`) for auth, email and subscriptions. `src/config/api.js` holds the single base URL the app points at:
-```js
-export const API_BASE_URL = 'https://forestapp-backend.onrender.com';
-```
-Change that one line to point the app at a different environment (local dev, staging, production).
+1. **Sign up** with your name, email and a password (at least 8 characters).
+2. **Fill in your details** (one time): designation (Van Mitra, Forest Guard, Forest Worker or Others), the place you usually start your tour from, beat name, forest block and forest range.
+3. **Add a profile picture**, or tap **Skip for now**.
+4. **Verify your email** (recommended). Open the verification email and tap the link. You can also resend it later from your profile. A verified email is what lets you reset your password if you forget it.
+5. **Subscribe** (see Pricing below) to unlock creating, editing and exporting.
 
-## Architecture
+You can open your **Profile** any time by tapping your picture at the top of the screen.
 
-```
-src/
-  api/            authApi.js, userApi.js, subscriptionApi.js — backend HTTP calls
-  config/         api.js (backend URL + deep-link scheme)
-  context/        AuthContext.js — session/auth state
-  database/       database.js (SQLite connection), migrations.js (schema, v1-v3)
-  repositories/   diaryRepository.js, diaryEntryRepository.js, profileRepository.js — raw SQL only
-  services/       diaryService.js (business rules), exportService.js (docx),
-                   profileService.js (profile validation/save), photoService.js
-                   (camera/location/GPS-stamp/gallery/viewer logic),
-                   entitlementService.js (on-device subscription-token verification)
-  screens/
-    auth/         LoginScreen, SignupScreen, ForgotPasswordScreen, ResetPasswordScreen,
-                   VerifyEmailScreen, DesignationSetupScreen, ProfilePicSetupScreen
-    HomeScreen, DiaryDetailsScreen, MyDiariesScreen, CreateDiaryScreen,
-    CameraCaptureScreen, PhotoDetailsFormScreen, ProfileScreen,
-    SubscriptionScreen, ChangePasswordScreen
-  components/     DiaryEntryCard, EntryPhotoState, MonthSelector, ProgressBar,
-                   NavigationControls, PhotoCompositor, AppTabBar
-  navigation/     AppNavigator.js (root stack: auth / setup / main app),
-                   MainTabNavigator.js (Home / My Diaries / Camera / Profile tabs),
-                   HomeStackNavigator.js, MyDiariesStackNavigator.js
-  utils/          dateUtils.js (local-date-only helpers), validation.js
-  constants/      colors.js, dimensions.js, locations.js (empty by default)
-```
+Once you are subscribed, the app keeps working **offline**, so poor signal in the field is not a problem.
 
-Screens only ever call `diaryService` / `profileService` / `photoService` / the `api/*` modules — never SQLite, `expo-camera`, `expo-location`, or `expo-media-library` directly.
+---
 
-**Note:** `src/screens/CurrentDiaryScreen.js` exists in the tree but isn't wired into any navigator — the Home tab renders `HomeScreen` directly. Harmless, but worth knowing if you're tracing navigation.
+## Features
 
-### Date handling
+The app has four tabs: **Home**, **My Diaries**, **Camera** and **TD**.
 
-All diary dates are stored and compared as local `YYYY-MM-DD` strings built from `getFullYear()/getMonth()/getDate()`. `Date.toISOString()` is never used for the diary `date` field, since that converts to UTC and can shift a date near midnight in timezones ahead of UTC (e.g. IST). See `src/utils/dateUtils.js` for details. (Audit-only `created_at`/`updated_at` timestamps do use ISO strings — that's just bookkeeping metadata, not the date-locking logic.)
+### Tour Diary
+- Your current month's diary is created automatically.
+- Create diaries for any past month or year.
+- Each day has an entry with **From / To / Remarks**. All three must be filled to save an entry.
+- **Home** shows today's entry so you can fill it in quickly, plus a progress bar for the month.
+- Entries are shown three per page, with a page strip at the top to jump around.
+- Edit any entry at any time.
+- Future dates are locked in the current month; past months are fully editable.
+- Missed days stay empty until you fill them. Nothing is auto-filled or deleted.
+- **My Diaries** lists every month with its completion percentage.
+- Delete a diary, or select several and delete them together (asks for confirmation first).
+- Your usual tour-start location fills in the **From** field for you.
+- **Download Word (.docx)** appears once the month is 100% complete. Until then the app shows how many entries are still empty. The document includes your name, designation and beat, the entries table, and signature spaces for you plus the Forest Guard I/C (not shown if you are a Forest Guard), Block Officer and Range Officer.
 
-### Photo handling
+### GPS-Stamped Camera
+- Live camera with real-time GPS details on screen.
+- Flip camera and flash controls.
+- A stamp is printed on the photo with latitude, longitude, elevation, GPS accuracy (colour-coded green, yellow or red), date and time, and an optional note.
+- **Retake** before confirming if you are not happy with the shot.
+- Photos save straight to your phone's Gallery. A thumbnail of your latest photo sits on the camera screen and opens your Gallery.
+- Tick **Add to today's entry** to attach the photo to today's diary entry. If today's entry is already filled, choose to **Replace** it or just **Save to Gallery**.
+- In a diary entry, tap **See Photo** to view it, and tap again for full-screen pinch-to-zoom.
+- If you later delete the photo from your Gallery, the entry shows "Photo not available".
 
-- One photo per diary entry max (`diary_entries.photo_path`, nullable) — no separate photos table.
-- The raw capture and the GPS/time-plus-note stamp are composited together in a single pass on `PhotoDetailsFormScreen` (via `PhotoCompositor`, built on `react-native-view-shot`) — avoiding a double JPEG re-encode.
-- The finished, stamped photo is saved once to the device's public Gallery; the app just remembers that Gallery path. There's no separate app-private storage copy, so deleting a photo from the device's Gallery is reflected back in the app ("Photo not available").
-- `photoService.openInViewer()` opens photos in the device's actual Gallery/Photos app on Android (native `ACTION_VIEW` intent via `expo-intent-launcher`, with a graceful fallback to the share sheet if that fails); iOS uses the share sheet, which shows a full image preview before any action is chosen.
+### TD Calculator
+- Two record types, switched at the top: **TD** (timber legally taken, with a marking number and Paid / Free grant status) and **Seized timber** (no marking number or status).
+- Enter name, father's name, address and compartment. Recently used compartments are suggested for one-tap reuse.
+- Add 1 to 4 trees by species and class, then enter sizes (length, width, thickness, quantity).
+- Volumes are calculated live and compared against the 65% limit, with a clear "within" or "exceeded" result.
+- Search saved records by name, address, compartment or marking number. View, edit or delete any record.
+- Export to Word as a single record, or as a batch (date range, search, and tick the records you want). TD and seized records are always exported separately. Long tables continue onto extra pages with page numbers.
 
-### Subscription & entitlement
+### Profile
+- View and edit your designation, usual tour start, beat, block and range.
+- Change your profile picture or remove it.
+- Set your date of birth. It can only be set **once**; contact support to change it later.
+- Change your password, and see your email verification status.
+- Check your subscription status and expiry date.
+- Log out.
 
-- `SubscriptionScreen` opens Razorpay's in-app checkout (`react-native-razorpay`) for the Monthly/Yearly plan.
-- A successful checkout doesn't itself grant access; the backend confirms the payment (via webhook) and issues a signed entitlement token, which the app polls for.
-- `entitlementService.js` verifies that token fully offline using `@noble/curves` (P-256 / ES256), so a field worker with no signal keeps working, while the paywall can't be spoofed by flipping a local boolean.
+### Saving your Word files
+- On Android, the first download asks you to pick a folder once. After that, files save there automatically. If that folder stops working, the app asks you again.
 
-## Database schema (v3)
+### Privacy
+- Your diary entries, photos and TD records are stored **on your phone**. They are not uploaded to any server.
+- Only your account details, profile (including profile picture) and subscription status are stored online.
 
-- **diaries** — `id, month, year, created_at, updated_at`, unique on `(month, year)`
-- **diary_entries** — `id, diary_id, serial_number, date, from_location, to_location, remarks, status (EMPTY|COMPLETED), photo_path, created_at, updated_at`
-- **profile** — single row (`id = 1`): `salutation, name, designation, dob, default_from_location, created_at, updated_at`
+---
 
-Migrations run automatically on every launch via `PRAGMA user_version` and are a no-op once already applied.
+## Pricing
 
-## Tech stack
+| Plan | Price | Duration |
+|---|---|---|
+| Monthly | ₹59 | 30 days |
+| Yearly | ₹599 | 365 days |
 
-- Expo SDK 54 (managed workflow), React Native 0.81, React 19
-- `expo-sqlite` — local diary/profile storage
-- `expo-camera`, `expo-location`, `expo-media-library`, `expo-intent-launcher` — camera capture, GPS, gallery save, native photo viewer
-- `expo-sharing` — Word export share sheet, iOS photo preview fallback
-- `react-native-view-shot` — GPS/time stamp compositing onto photos
-- `docx` — Word (.docx) generation
-- `@react-navigation` (native-stack + bottom-tabs) — navigation
-- `react-native-razorpay` — in-app subscription checkout
-- `@noble/curves` — offline verification of the signed entitlement token
-- `expo-secure-store` — secure storage of auth tokens on-device
-- `expo-linking` — deep links for email verification / password reset (scheme: `forestapp`)
+- Payment is made in the app through **Razorpay**.
+- Plans do **not** renew automatically.
+- Renewing early adds the new period on top of your remaining days, so you don't lose any paid time.
+- Without an active subscription the app is **view-only**: you can still open your saved diaries and records, but cannot create, edit, delete or export.
+- If your phone's clock looks wrong, the app asks you to connect to the internet before you can edit.
 
-## Excluded (by design)
+---
 
-Notifications, AI-generated remarks, attendance, and analytics remain out of scope for now. The architecture (service/repository separation, empty `LOCATIONS` config, swappable export layer) is set up so these can be added later without a rewrite.
+## Permissions the app asks for
+
+| Permission | Why |
+|---|---|
+| Camera | To take tour photos |
+| Location | To stamp photos with GPS coordinates |
+| Photos / Media | To save photos to your Gallery and choose a profile picture |
+
+If you decline a permission, the camera screen shows a **Grant Permissions** button instead of breaking.
+
+---
+
+## Need help?
+
+- **Email:** justpahadi.hp@gmail.com
+- Terms, Privacy Policy, and Refund & Cancellation policies are available on the app website.
+
+---
+
+*Forest App is operated by Vikas Justa.*
